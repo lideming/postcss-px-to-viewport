@@ -100,7 +100,8 @@ $ yarn add -D postcss-px-to-viewport
   include: undefined,
   landscape: false,
   landscapeUnit: 'vw',
-  landscapeWidth: 568
+  landscapeWidth: 568,
+  pxContainer: null
 }
 ```
 - `unitToConvert` (String) 需要转换的单位，默认为"px"
@@ -132,6 +133,7 @@ $ yarn add -D postcss-px-to-viewport
 - `landscape` (Boolean) 是否添加根据 `landscapeWidth` 生成的媒体查询条件 `@media (orientation: landscape)`
 - `landscapeUnit` (String) 横屏时使用的单位
 - `landscapeWidth` (Number) 横屏时使用的视口宽度
+- `pxContainer` (String) 指定一个容器选择器，在该容器内保留原始的px值。当指定此选项时，插件将为该容器内的元素生成额外的规则，保留原始的px值。
 
 > `exclude`和`include`是可以一起设置的，将取两者规则的交集。
 
@@ -163,6 +165,71 @@ Example:
 
 There are several more reasons why your pixels may not convert, the following options may affect this:
 `propList`, `selectorBlackList`, `minPixelValue`, `mediaQuery`, `exclude`, `include`.
+
+#### 使用 pxContainer
+
+`pxContainer` 选项允许您指定一个CSS选择器，在该选择器对应的容器内保留原始的px值。当您希望在应用程序的某些部分保持基于像素的测量，而在其他地方使用视口单位时，这个功能非常有用。
+
+示例：
+
+```css
+/* 输入示例: */
+.app {
+  width: 12px;
+  height: 16px;
+}
+
+/* 配置选项: { pxContainer: '.no-vw' } */
+
+/* 输出示例: */
+.app {
+  width: 2vw;
+  height: 2.66667vw;
+}
+.no-vw .app {
+  width: 12px;
+  height: 16px;
+}
+```
+
+这个功能特别适用于：
+- 在特定容器中保持像素精度
+- 支持需要像素值的传统组件
+- 为视口单位支持有限的浏览器创建回退样式
+
+您可以在PostCSS配置中使用`pxContainer`选项：
+
+```js
+// postcss.config.js
+module.exports = {
+  plugins: {
+    'postcss-px-to-viewport': {
+      viewportWidth: 375,
+      pxContainer: '.no-vw'
+    }
+  }
+}
+```
+
+使用此配置，对于以下CSS：
+```css
+.app {
+  width: 12px;
+}
+```
+
+将生成：
+
+```css
+.app {
+  width: 2vw;
+}
+.no-vw .app {
+  width: 12px;
+}
+```
+
+这允许你在 `.no-vw` 容器内的元素禁用px到vw的转换。
 
 #### 使用PostCss配置文件时
 
