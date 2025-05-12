@@ -100,7 +100,8 @@ Default Options:
   include: undefined,
   landscape: false,
   landscapeUnit: 'vw',
-  landscapeWidth: 568
+  landscapeWidth: 568,
+  pxContainer: null
 }
 ```
 - `unitToConvert` (String) unit to convert, by default, it is px.
@@ -132,6 +133,7 @@ Default Options:
 - `landscape` (Boolean) Adds `@media (orientation: landscape)` with values converted via `landscapeWidth`.
 - `landscapeUnit` (String) Expected unit for `landscape` option
 - `landscapeWidth` (Number) Viewport width for landscape orientation.
+- `pxContainer` (String) A CSS selector for a container where original px values should be preserved. When specified, the plugin will generate additional rules with the original px values for elements within this container.
 
 > `exclude` and `include` can be set together, and the intersection of the two rules will be taken.
 
@@ -163,6 +165,70 @@ Example:
 
 There are several more reasons why your pixels may not convert, the following options may affect this:
 `propList`, `selectorBlackList`, `minPixelValue`, `mediaQuery`, `exclude`, `include`.
+
+#### Using pxContainer
+
+The `pxContainer` option allows you to specify a CSS selector for a container where the original px values should be preserved. This is useful when you want to maintain pixel-based measurements in certain parts of your application while using viewport units elsewhere.
+
+Example:
+
+```css
+/* example input: */
+.app {
+  width: 12px;
+  height: 16px;
+}
+
+/* with options: { pxContainer: '.no-vw' } */
+
+/* example output: */
+.app {
+  width: 2vw;
+  height: 2.66667vw;
+}
+.no-vw .app {
+  width: 12px;
+  height: 16px;
+}
+```
+
+This feature is particularly useful for:
+- Maintaining pixel precision in specific containers
+- Supporting legacy components that require pixel values
+- Creating fallback styles for browsers with limited viewport unit support
+
+You can use the `pxContainer` option in your PostCSS configuration:
+
+```js
+// postcss.config.js
+module.exports = {
+  plugins: {
+    'postcss-px-to-viewport': {
+      viewportWidth: 375,
+      pxContainer: '.no-vw'
+    }
+  }
+}
+```
+
+With this configuration, for the following CSS:
+```css
+.app {
+  width: 12px;
+}
+```
+
+The plugin will generate:
+```css
+.app {
+  width: 3.75vw;
+}
+.no-vw .app {
+  width: 12px;
+}
+```
+
+This allows you to disable the px to vw conversion for elements within the `.no-vw` container.
 
 #### Use with PostCss configuration file
 
