@@ -19,7 +19,8 @@ var defaults = {
   replace: true,
   landscape: false,
   landscapeUnit: 'vw',
-  landscapeWidth: 568
+  landscapeWidth: 568,
+  pxContainer: null // Container selector to keep original px values
 };
 
 var ignoreNextComment = 'px-to-viewport-ignore-next';
@@ -86,6 +87,9 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
 
       if (!validateParams(rule.parent.params, opts.mediaQuery)) return;
 
+      // Store declarations that need to be added to the container rule
+      var containerDecls = [];
+      
       rule.walkDecls(function(decl, i) {
         if (decl.value.indexOf(opts.unitToConvert) === -1) return;
         if (!satisfyPropList(decl.prop)) return;
@@ -125,12 +129,36 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
 
         if (declarationExists(decl.parent, decl.prop, value)) return;
 
-        if (opts.replace) {
+        // If pxContainer option is set, store the original declaration
+        if (opts.pxContainer) {
+          containerDecls.push({
+            prop: decl.prop,
+            value: decl.value
+          });
+          // Replace the original declaration with viewport units
+          decl.value = value;
+        } else if (opts.replace) {
           decl.value = value;
         } else {
           decl.parent.insertAfter(i, decl.clone({ value: value }));
         }
       });
+      
+      // Create a container rule if needed
+      if (opts.pxContainer && containerDecls.length > 0) {
+        var containerRule = postcss.rule({
+          selector: opts.pxContainer + ' ' + rule.selector,
+          source: rule.source
+        });
+        
+        // Add all stored declarations to the container rule
+        containerDecls.forEach(function(decl) {
+          containerRule.append({ prop: decl.prop, value: decl.value });
+        });
+        
+        // Add the container rule after the original rule
+        rule.parent.insertAfter(rule, containerRule);
+      }
     });
 
     if (landscapeRules.length > 0) {
